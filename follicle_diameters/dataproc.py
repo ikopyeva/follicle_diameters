@@ -3,13 +3,15 @@
 
 """
 ikopyeva.py
-ChE 696 project to ctrack follicle diameters
+ChE 696 project to track follicle diameters
 
 Handles the primary functions
 """
 
 import sys
 import argparse
+import os
+import pandas as pd
 
 
 def warning(*objs):
@@ -75,4 +77,5 @@ def main(argv=None):
 
 if __name__ == "__main__":
     status = main()
-    sys.exit(status)
+    sys.exit(status)""
+
