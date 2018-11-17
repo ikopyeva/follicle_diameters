@@ -16,13 +16,50 @@ import pandas as pd
 import numpy as np
 from pandas import DataFrame
 
+bmb_data = pd.read_csv("data/BMB.csv", header=None)
+bmb_data.columns = bmb_data.iloc[0,0:]
+bmb_data.index = ['samples', 'day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
+bmb = bmb_data.drop(['samples'])
+bmb = bmb.apply(pd.to_numeric)
 
-data = pd.read_csv("data/follicle_data_2.csv", header=None) #reading in csv file
-data.columns = data.iloc[0, 0:]
+hbp_data = pd.read_csv("data/HBP.csv", header=None)
+hbp_data.columns = bmb_data.iloc[0,0:]
+hbp_data.index = ['samples', 'day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
+hbp = hbp_data.drop(['samples'])
+hbp = hbp.apply(pd.to_numeric)
 
-data.index = ['samples', 'day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
-df = data.drop(['samples'])
-df = df.apply(pd.to_numeric) #converting from object to int
+rgd_data = pd.read_csv("data/RGD.csv", header=None)
+rgd_data.columns = rgd_data.iloc[0,0:]
+rgd_data.index = ['samples', 'day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
+rgd = rgd_data.drop(['samples'])
+rgd = rgd.apply(pd.to_numeric)# converting from object to int
+
+bmb_avg = np.zeros(shape=(len(bmb.index)))
+hbp_avg = np.zeros(shape=(len(hbp.index)))
+rgd_avg = np.zeros(shape=(len(rgd.index)))
+bmb_count = np.zeros(shape=(len(bmb.index)))
+hbp_count = np.zeros(shape=(len(hbp.index)))
+rgd_count = np.zeros(shape=(len(rgd.index)))
+
+
+for j in range(len(bmb.columns)):
+    for i in range(len(bmb.index)):
+        if i == 0:
+            bmb_count[i] += 1
+        elif 1 < (bmb.iloc[i, j] - bmb.iloc[i-1, j]):
+            bmb_count[i] += 1
+        else:
+            bmb_count[i] += 0
+bmb_count = np.true_divide(bmb_count, 7/100)
+print(bmb_count)
+print(len(bmb.index))
+
+
+
+
+
+
+
 
 
 # ax = df.plot(kind='line')
@@ -35,7 +72,7 @@ df = df.apply(pd.to_numeric) #converting from object to int
 # plt.show()
 # plt.interactive(False)
 
-dead = np.zeros(shape=(len(df.index), len(df.columns)))
+#dead = np.zeros(shape=(len(df.index), len(df.columns)))
 
 
 
