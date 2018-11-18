@@ -35,14 +35,22 @@ rgd = rgd_data.drop(['samples'])
 rgd = rgd.apply(pd.to_numeric)# converting from object to int
 
 bmb_avg = np.zeros(shape=(len(bmb.index)))
+bmb_std = np.zeros(shape=(len(bmb.index)))
+
 hbp_avg = np.zeros(shape=(len(hbp.index)))
+hbp_std = np.zeros(shape=(len(hbp.index)))
+
 rgd_avg = np.zeros(shape=(len(rgd.index)))
+rgd_std = np.zeros(shape=(len(rgd.index)))
+
 bmb_count = np.zeros(shape=(len(bmb.index)))
 hbp_count = np.zeros(shape=(len(hbp.index)))
 rgd_count = np.zeros(shape=(len(rgd.index)))
 
+data_avg = np.zeros(shape=(7, 3))
+data_std = np.zeros(shape=(7, 3))
 
-for j in range(len(bmb.columns)):
+for j in range(len(bmb.columns)): # compares previous row to current row and determines whether follicle is dead
     for i in range(len(bmb.index)):
         if i == 0:
             bmb_count[i] += 1
@@ -50,29 +58,44 @@ for j in range(len(bmb.columns)):
             bmb_count[i] += 1
         else:
             bmb_count[i] += 0
+            bmb.iloc[i, j] = np.nan #if follicle is dead, puts NaN
 bmb_count = np.true_divide(bmb_count, 7/100)
-print(bmb_count)
-print(len(bmb.index))
+
+for x in range(len(bmb.index)):
+    bmb_avg[x] = np.nanmean(bmb.iloc[x])
+    bmb_std[x] = np.nanstd(bmb.iloc[x])
+
+data = np.vstack((bmb_avg.T, hbp_avg.T, rgd_avg.T))
+std = np.vstack((bmb_std.T, hbp_std.T, rgd_std.T))
+data = data.T
+std = std.T
+
+df = pd.DataFrame.from_records(data)
+std_df = pd.DataFrame.from_records(std)
+df.columns = ['BMB', 'HBP', 'RGD']
+df.index = ['day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
+std_df.columns = ['BMB', 'HBP', 'RGD']
+std_df.index = ['day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
+
+ax = df.plot(yerr=std_df, fmt='o-', capsize=3)
+
+#plot error bars
+#ax = df.plot(figsize=(12, 8), yerr=std_df, capsize=3, legend=False)
+#reset color cycle so that the marker colors match
+#ax.set_prop_cycle(None)
+#plot the markers
+#df.plot(figsize=(12, 8), style=['^-', 'o-', 'x-'], markersize=10, ax=ax, legend=True)
+
+ax.set_xticks(range(len(df.index)))
+ax.set_xticklabels(df.index, rotation=90)
+ax.legend(title=None)
+ax.set_xlabel('Time (days)')
+ax.set_ylabel('Follicle Diameter ($\mu$m)')
+ax.set_title('Peptides and their Effect on Follicle Growth')
+plt.show()
+plt.interactive(False)
 
 
-
-
-
-
-
-
-
-# ax = df.plot(kind='line')
-# ax.set_xticks(range(len(df.index)))
-# ax.set_xticklabels(df.index, rotation=90)
-# ax.legend(title=None)
-# ax.set_xlabel('Time (days)')
-# ax.set_ylabel('Follicle Diameter ($\mu$m)')
-# ax.set_title('Peptides and their Effect on Follicle Growth')
-# plt.show()
-# plt.interactive(False)
-
-#dead = np.zeros(shape=(len(df.index), len(df.columns)))
 
 
 
