@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 import os
 import pandas as pd
 import numpy as np
-from pandas import DataFrame
 
 bmb_data = pd.read_csv("data/BMB.csv", header=None)
 bmb_data.columns = bmb_data.iloc[0,0:]
@@ -84,8 +83,14 @@ count_df.index = ['day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12
 
 fig, axes = plt.subplots(nrows=2, ncols=1)
 
-df.plot(ax=axes[0], yerr=std_df, marker='o', capsize=3)
-count_df.plot(marker='o', ax=axes[1])
+def colormapgenerator(N, cm=None): #colormap to make plots more visually appealing
+    base = plt.cm.get_cmap(cm)
+    color_list = base(np.linspace(0.3, 1, N))
+    cm_name = base.name + str(N)
+    return base.from_list(cm_name, color_list, N)
+
+df.plot(ax=axes[0], yerr=std_df, marker='o', capsize=3, cmap=colormapgenerator(4, 'YlOrBr'))
+count_df.plot(marker='o', ax=axes[1], cmap=colormapgenerator(4, 'YlOrBr'), legend=False)
 
 axes[0].set_xticks(range(len(df.index)))
 axes[1].xaxis.set_tick_params(labelbottom=True)
@@ -94,17 +99,9 @@ axes[1].set_xlabel('Time (days)')
 axes[0].set_ylabel('Follicle Diameter ($\mu$m)')
 axes[1].set_ylabel('% Survival')
 axes[0].set_title('Peptides and their Effect on Follicle Growth and Survival')
+
 plt.show()
 plt.interactive(False)
-
-# axs = count.plot(fmt='o-')
-# axs.set_xticks((range(len(df.index))))
-# axs.set_xticklabels(df.index, rotation=90)
-# axs.legend(title=None)
-
-
-
-
 
 #os.path.isdir/file to check if it made the actual file??
 
