@@ -50,7 +50,7 @@ rgd_count = np.zeros(shape=(len(rgd.index)))
 data_avg = np.zeros(shape=(7, 3))
 data_std = np.zeros(shape=(7, 3))
 
-for j in range(len(bmb.columns)): # compares previous row to current row and determines whether follicle is dead
+for j in range(len(bmb.columns)):# compares previous row to current row and determines whether follicle is dead
     for i in range(len(bmb.index)):
         if i == 0:
             bmb_count[i] += 1
@@ -67,33 +67,40 @@ for x in range(len(bmb.index)):
 
 data = np.vstack((bmb_avg.T, hbp_avg.T, rgd_avg.T))
 std = np.vstack((bmb_std.T, hbp_std.T, rgd_std.T))
+count = np.vstack((bmb_count.T, hbp_count.T, rgd_count.T))
 data = data.T
 std = std.T
 
 df = pd.DataFrame.from_records(data)
 std_df = pd.DataFrame.from_records(std)
+count_df = pd.DataFrame.from_records(count.T)
+
 df.columns = ['BMB', 'HBP', 'RGD']
 df.index = ['day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
 std_df.columns = ['BMB', 'HBP', 'RGD']
 std_df.index = ['day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
+count_df.columns = ['BMB', 'HBP', 'RGD']
+count_df.index = ['day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
 
-ax = df.plot(yerr=std_df, fmt='o-', capsize=3)
+fig, axes = plt.subplots(nrows=2, ncols=1)
 
-#plot error bars
-#ax = df.plot(figsize=(12, 8), yerr=std_df, capsize=3, legend=False)
-#reset color cycle so that the marker colors match
-#ax.set_prop_cycle(None)
-#plot the markers
-#df.plot(figsize=(12, 8), style=['^-', 'o-', 'x-'], markersize=10, ax=ax, legend=True)
+df.plot(ax=axes[0], yerr=std_df, marker='o', capsize=3)
+count_df.plot(marker='o', ax=axes[1])
 
-ax.set_xticks(range(len(df.index)))
-ax.set_xticklabels(df.index, rotation=90)
-ax.legend(title=None)
-ax.set_xlabel('Time (days)')
-ax.set_ylabel('Follicle Diameter ($\mu$m)')
-ax.set_title('Peptides and their Effect on Follicle Growth')
+axes[0].set_xticks(range(len(df.index)))
+axes[1].xaxis.set_tick_params(labelbottom=True)
+axes[1].set_xticklabels(df.index, rotation=90)
+axes[1].set_xlabel('Time (days)')
+axes[0].set_ylabel('Follicle Diameter ($\mu$m)')
+axes[1].set_ylabel('% Survival')
+axes[0].set_title('Peptides and their Effect on Follicle Growth and Survival')
 plt.show()
 plt.interactive(False)
+
+# axs = count.plot(fmt='o-')
+# axs.set_xticks((range(len(df.index))))
+# axs.set_xticklabels(df.index, rotation=90)
+# axs.legend(title=None)
 
 
 

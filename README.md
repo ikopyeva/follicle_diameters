@@ -5,7 +5,7 @@ follicle_diameters
 [![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/REPLACE_WITH_APPVEYOR_LINK/branch/master?svg=true)](https://ci.appveyor.com/project/REPLACE_WITH_OWNER_ACCOUNT/follicle_diameters/branch/master)
 [![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/follicle_diameters/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/follicle_diameters/branch/master)
 
-ChE 696 project to ctrack follicle diameters
+ChE 696 project to track follicle diameters
 
 ### Copyright
 
