@@ -8,7 +8,7 @@ ChE 696 project to ctrack follicle diameters
 from __future__ import absolute_import
 
 # Add imports here
-from .ikopyeva import *
+from .dataproc import *
 
 # Handle versioneer
 from ._version import get_versions

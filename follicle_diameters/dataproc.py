@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-ikopyeva.py
-ChE 696 project to track follicle diameters
+dataproc.py
+ChE 696 project to track follicle diameters,
+takes CSV files and makes plots of ovarian follicle growth
+and survival
 
-Handles the primary functions
 """
 
 import sys
@@ -13,161 +14,107 @@ import argparse
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
-import numpy as np
+from pathlib import Path
 
-bmb_data = pd.read_csv("data/BMB.csv", header=None)
-bmb_data.columns = bmb_data.iloc[0,0:]
-bmb_data.index = ['samples', 'day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
-bmb = bmb_data.drop(['samples'])
-bmb = bmb.apply(pd.to_numeric)
 
-hbp_data = pd.read_csv("data/HBP.csv", header=None)
-hbp_data.columns = bmb_data.iloc[0,0:]
-hbp_data.index = ['samples', 'day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
-hbp = hbp_data.drop(['samples'])
-hbp = hbp.apply(pd.to_numeric)
+def parse_cmdline(argv):
+    """
+    Returns the parsed argument list and return code.
+    `argv` is a list of arguments, or `None` for ``sys.argv[1:]``.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--file", help="Specify Input CSV File(s)", required=True, nargs='+', action='append')
+    parser.add_argument("-o", "--output", help="dir or file to save figure in", nargs=1)
+    args = None
+    try:
+        args = parser.parse_args(argv)
 
-rgd_data = pd.read_csv("data/RGD.csv", header=None)
-rgd_data.columns = rgd_data.iloc[0,0:]
-rgd_data.index = ['samples', 'day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
-rgd = rgd_data.drop(['samples'])
-rgd = rgd.apply(pd.to_numeric)# converting from object to int
+    except IOError as e:
+        print("Did not parse correctly: '%s'" %e, file=sys.stderr)
+        parser.print_help()
+        return args, 2
 
-bmb_avg = np.zeros(shape=(len(bmb.index)))
-bmb_std = np.zeros(shape=(len(bmb.index)))
+    vars(args)['file']=[item for sublist in vars(args)['file'] for item in sublist] #Flatten file inputs into 1 list
+    for file in vars(args)['file']:
+        if not os.path.isfile(file):
+            print("Error: '%s' was not found" %file, file=sys.stderr)
+            return args, 2
 
-hbp_avg = np.zeros(shape=(len(hbp.index)))
-hbp_std = np.zeros(shape=(len(hbp.index)))
+    if vars(args)['output']:
+        file_path = Path(vars(args)['output'][0]).resolve()  # add $PWD if required
+        if not os.path.exists(file_path.parent):
+            print("Error invalid output location '%s'" %vars(args)['output'][0], file=sys.stderr)
+            return args, 2
+        vars(args)['output'] = file_path
 
-rgd_avg = np.zeros(shape=(len(rgd.index)))
-rgd_std = np.zeros(shape=(len(rgd.index)))
+    return vars(args), 0
 
-bmb_count = np.zeros(shape=(len(bmb.index)))
-hbp_count = np.zeros(shape=(len(hbp.index)))
-rgd_count = np.zeros(shape=(len(rgd.index)))
+def read_files(files):
+    """
+    Takes list of Paths (filenames)
+    returns dict of dataframes
+    """
+    data = {}
+    for x in files:
+        sample = x.split('/')[-1][:-4]
+        data[sample] = pd.read_csv(x)
+        data[sample].index *= 2  # samples are taken every other day
+    return data
 
-data_avg = np.zeros(shape=(7, 3))
-data_std = np.zeros(shape=(7, 3))
+def clean(df):
+    """
+    Takes a dataframe,
+    checks if dead, changes dead to NaNs,
+    returns dataframe without full rows of NaNs
+    """
+    for sample in df:
+        last_row = int(df.loc[df[sample] >= df[sample].max()-1].iloc[0].name)
+        df.loc[df.index > last_row, [sample]] = None
 
-for j in range(len(bmb.columns)):# compares previous row to current row and determines whether follicle is dead
-    for i in range(len(bmb.index)):
-        if i == 0:
-            bmb_count[i] += 1
-        elif 1 < (bmb.iloc[i, j] - bmb.iloc[i-1, j]):
-            bmb_count[i] += 1
-        else:
-            bmb_count[i] += 0
-            bmb.iloc[i, j] = np.nan #if follicle is dead, puts NaN
-bmb_count = np.true_divide(bmb_count, 7/100)
+    df = df.dropna(how='all')
+    return df
 
-for x in range(len(bmb.index)):
-    bmb_avg[x] = np.nanmean(bmb.iloc[x])
-    bmb_std[x] = np.nanstd(bmb.iloc[x])
+def main(argv):
+    """
+    Takes list of arguments,
+    returns .png file of plots in specified location
+    """
+    args, ret = parse_cmdline(argv)
+    if ret:
+        return ret
 
-data = np.vstack((bmb_avg.T, hbp_avg.T, rgd_avg.T))
-std = np.vstack((bmb_std.T, hbp_std.T, rgd_std.T))
-count = np.vstack((bmb_count.T, hbp_count.T, rgd_count.T))
-data = data.T
-std = std.T
+    data = read_files(args['file'])
 
-df = pd.DataFrame.from_records(data)
-std_df = pd.DataFrame.from_records(std)
-count_df = pd.DataFrame.from_records(count.T)
+    fig, axs = plt.subplots(2, 1)
 
-df.columns = ['BMB', 'HBP', 'RGD']
-df.index = ['day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
-std_df.columns = ['BMB', 'HBP', 'RGD']
-std_df.index = ['day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
-count_df.columns = ['BMB', 'HBP', 'RGD']
-count_df.index = ['day 0', 'day 2', 'day 4', 'day 6', 'day 8', 'day 10', 'day 12']
+    #remove measurements of dead things
+    for pep, df in data.items():
+        df = clean(df)
 
-fig, axes = plt.subplots(nrows=2, ncols=1)
+        axs[0].errorbar(df.index, df.mean(axis=1), yerr=df.std(axis=1), label=pep, capsize=3, marker='o')
+        alive = df.count(axis=1)/df.shape[1]*100  #percentage of alive follicles
+        axs[1].plot(df.index, alive, label=pep, marker='o')
 
-def colormapgenerator(N, cm=None): #colormap to make plots more visually appealing
-    base = plt.cm.get_cmap(cm)
-    color_list = base(np.linspace(0.3, 1, N))
-    cm_name = base.name + str(N)
-    return base.from_list(cm_name, color_list, N)
+    axs[0].legend()
+    axs[0].set_xlabel('Time (days)')
+    axs[0].set_ylabel('Follicle Diameter ($\mu$m)')
+    axs[0].set_title('Peptides and their Effect on Ovarian Follicle Growth and Survival')
 
-df.plot(ax=axes[0], yerr=std_df, marker='o', capsize=3, cmap=colormapgenerator(4, 'YlOrBr'))
-count_df.plot(marker='o', ax=axes[1], cmap=colormapgenerator(4, 'YlOrBr'), legend=False)
+    axs[1].legend()
+    axs[1].set_xlabel('Time (days)')
+    axs[1].set_ylabel('% Survival')
+    plt.tight_layout()
 
-axes[0].set_xticks(range(len(df.index)))
-axes[1].xaxis.set_tick_params(labelbottom=True)
-axes[1].set_xticklabels(df.index, rotation=90)
-axes[1].set_xlabel('Time (days)')
-axes[0].set_ylabel('Follicle Diameter ($\mu$m)')
-axes[1].set_ylabel('% Survival')
-axes[0].set_title('Peptides and their Effect on Follicle Growth and Survival')
+    if(args['output']):
+        plt.savefig(args['output'])
+    plt.show()
 
-plt.show()
-plt.interactive(False)
 
-#os.path.isdir/file to check if it made the actual file??
+    return 0  # success
 
-# def warning(*objs):
-#     """Writes a message to stderr."""
-#     print("WARNING: ", *objs, file=sys.stderr)
-#
-#
-# def canvas(with_attribution=True):
-#     """
-#     Placeholder function to show example docstring (NumPy format)
-#
-#     Replace this function and doc string for your own project
-#
-#     Parameters
-#     ----------
-#     with_attribution : bool, Optional, default: True
-#         Set whether or not to display who the quote is from
-#
-#     Returns
-#     -------
-#     quote : str
-#         Compiled string including quote and optional attribution
-#     """
-#
-#     quote = "The code is but a canvas to our imagination."
-#     if with_attribution:
-#         quote += "\n\t- Adapted from Henry David Thoreau"
-#     return quote
-#
-#
-# def parse_cmdline(argv):
-#     """
-#     Returns the parsed argument list and return code.
-#     `argv` is a list of arguments, or `None` for ``sys.argv[1:]``.
-#     """
-#     if argv is None:
-#         argv = sys.argv[1:]
-#
-#     # initialize the parser object:
-#     parser = argparse.ArgumentParser()
-#     # parser.add_argument("-i", "--input_rates", help="The location of the input rates file",
-#     #                     default=DEF_IRATE_FILE, type=read_input_rates)
-#     parser.add_argument("-n", "--no_attribution", help="Whether to include attribution",
-#                         action='store_false')
-#     args = None
-#     try:
-#         args = parser.parse_args(argv)
-#     except IOError as e:
-#         warning("Problems reading file:", e)
-#         parser.print_help()
-#         return args, 2
-#
-#     return args, 0
-#
-#
-# def main(argv=None):
-#     args, ret = parse_cmdline(argv)
-#     if ret != 0:
-#         return ret
-#     print(canvas(args.no_attribution))
-#     return 0  # success
-#
-#
-# if __name__ == "__main__":
-#     status = main()
-#     sys.exit(status)
+
+if __name__ == "__main__":
+    status = main(sys.argv[1:])
+    sys.exit(status)
 
 
